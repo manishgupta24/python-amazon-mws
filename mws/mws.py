@@ -4,6 +4,7 @@
 # Basic interface to Amazon MWS
 # Based on http://code.google.com/p/amazon-mws-python
 #
+# Manish Gupta -- 22-03-2016 -- Edited merchant Fulfillment Class
 
 import urllib
 import hashlib
@@ -253,6 +254,27 @@ class MWS(object):
                 param = "%s." % param
             for num, value in enumerate(values):
                 params['%s%d' % (param, (num + 1))] = value
+        return params
+
+    def enumerate_param_mid(self, param, values, after):
+        """
+            Builds a dictionary of an enumerated parameter.
+            Takes any iterable and returns a dictionary.
+            ie.
+            enumerate_param('MarketplaceIdList.Id', (123, 345, 4343))
+            returns
+            {
+                MarketplaceIdList.Id.1: 123,
+                MarketplaceIdList.Id.2: 345,
+                MarketplaceIdList.Id.3: 4343
+            }
+        """
+        params = {}
+        if values is not None:
+            if not param.endswith('.'):
+                param = "%s." % param
+            for num, value in enumerate(values):
+                params['%s%d.%s' % (param, (num + 1), after)] = value
         return params
 
 
@@ -653,3 +675,85 @@ class Recommendations(MWS):
         data = dict(Action="ListRecommendationsByNextToken",
                     NextToken=token)
         return self.make_request(data, "POST")
+
+
+class MerchantFulfillment(MWS):
+
+    ##  22-03-2016
+    ##  Edited the variables inside dict in get_eligible_shipping_services, createShipment methods
+    ##  from 'ShipmentRequestDetails.ShipFromAddress.Name' to ShipmentRequestDetails_ShipFromAddress_Name.
+
+    """ Amazon MWS Recommendations API """
+
+    URI = '/MerchantFulfillment/2015-06-01'
+    VERSION = '2015-06-01'
+    NS = "{https://mws.amazonservices.com/MerchantFulfillment/2015-06-01}"
+
+    def get_eligible_shipping_services(self, amazonOrderId, orderItemIdList, orderItemQuantityList, businessName, businessAddressLine1, businessEmail, businessCity, businessPostalCode, businessCountryCode, businessPhone, packageLength, packageWidth, packageHeight, packageMeasuringUnit, packageWeightValue, packageWeightUnit, deliveryExperience, carrierWillPickUp=False, businessAddressLine2=None, businessAddressLine3=None, businessDistrictOrCounty=None, businessStateOrProvinceCode=None):
+
+        data = dict(Action='GetEligibleShippingServices',
+                    ShipmentRequestDetails_ShipFromAddress_Name = businessName,
+                    ShipmentRequestDetails_ShipFromAddress_AddressLine1 = businessAddressLine1,
+                    ShipmentRequestDetails_ShipFromAddress_AddressLine2 = businessAddressLine2,
+                    ShipmentRequestDetails_ShipFromAddress_AddressLine3 = businessAddressLine3,
+                    ShipmentRequestDetails_ShipFromAddress_DistrictOrCounty = businessDistrictOrCounty,
+                    ShipmentRequestDetails_ShipFromAddress_City = businessCity,
+                    ShipmentRequestDetails_ShipFromAddress_StateOrProvinceCode = businessStateOrProvinceCode,
+                    ShipmentRequestDetails_ShipFromAddress_PostalCode = businessPostalCode,
+                    ShipmentRequestDetails_ShipFromAddress_CountryCode = businessCountryCode,
+                    ShipmentRequestDetails_ShipFromAddress_Email = businessEmail,
+                    ShipmentRequestDetails_ShipFromAddress_Phone = businessPhone,
+                    ShipmentRequestDetails_PackageDimensions_Length = packageLength,
+                    ShipmentRequestDetails_PackageDimensions_Width = packageWidth,
+                    ShipmentRequestDetails_PackageDimensions_Height = packageHeight,
+                    ShipmentRequestDetails_PackageDimensions_Unit = packageMeasuringUnit,
+                    ShipmentRequestDetails_Weight_Value = packageWeightValue,
+                    ShipmentRequestDetails_Weight_Unit = packageWeightUnit,
+                    ShipmentRequestDetails_ShippingServiceOptions_DeliveryExperience = deliveryExperience,
+                    ShipmentRequestDetails_ShippingServiceOptions_CarrierWillPickUp = carrierWillPickUp)
+
+        data.update(self.enumerate_param_mid('ShipmentRequestDetails.ItemList.Item.', orderItemIdList, 'OrderItemId'))
+        data.update(self.enumerate_param_mid('ShipmentRequestDetails.ItemList.Item.', orderItemQuantityList, 'Quantity'))
+        return self.make_request(data, "POST")
+
+    def createShipment(self, shippingServiceId, amazonOrderId, orderItemIdList, orderItemQuantityList, businessName, businessAddressLine1, businessEmail, businessCity, businessPostalCode, businessCountryCode, businessPhone, packageLength, packageWidth, packageHeight, packageMeasuringUnit, packageWeightValue, packageWeightUnit, deliveryExperience, carrierWillPickUp=False, businessAddressLine2=None, businessAddressLine3=None, businessDistrictOrCounty=None, businessStateOrProvinceCode=None):
+
+        data = dict(Action='CreateShipment',
+                    ShippingServiceId=shippingServiceId,
+                    ShipmentRequestDetails_AmazonOrderId=amazonOrderId,
+                    ShipmentRequestDetails_ShipFromAddress_Name= businessName,
+                    ShipmentRequestDetails_ShipFromAddress_AddressLine1 = businessAddressLine1,
+                    ShipmentRequestDetails_ShipFromAddress_AddressLine2 = businessAddressLine2,
+                    ShipmentRequestDetails_ShipFromAddress_AddressLine3 = businessAddressLine3,
+                    ShipmentRequestDetails_ShipFromAddress_DistrictOrCounty = businessDistrictOrCounty,
+                    ShipmentRequestDetails_ShipFromAddress_City = businessCity,
+                    ShipmentRequestDetails_ShipFromAddress_StateOrProvinceCode = businessStateOrProvinceCode,
+                    ShipmentRequestDetails_ShipFromAddress_PostalCode = businessPostalCode,
+                    ShipmentRequestDetails_ShipFromAddress_CountryCode = businessCountryCode,
+                    ShipmentRequestDetails_ShipFromAddress_Email = businessEmail,
+                    ShipmentRequestDetails_ShipFromAddress_Phone = businessPhone,
+                    ShipmentRequestDetails_PackageDimensions_Length = packageLength,
+                    ShipmentRequestDetails_PackageDimensions_Width = packageWidth,
+                    ShipmentRequestDetails_PackageDimensions_Height = packageHeight,
+                    ShipmentRequestDetails_PackageDimensions_Unit = packageMeasuringUnit,
+                    ShipmentRequestDetails_Weight_Value = packageWeightValue,
+                    ShipmentRequestDetails_Weight_Unit = packageWeightUnit,
+                    ShipmentRequestDetails_ShippingServiceOptions_DeliveryExperience = deliveryExperience,
+                    ShipmentRequestDetails_ShippingServiceOptions_CarrierWillPickUp = carrierWillPickUp)
+
+        data.update(self.enumerate_param_mid('ShipmentRequestDetails.ItemList.Item.', orderItemIdList, 'OrderItemId'))
+        data.update(self.enumerate_param_mid('ShipmentRequestDetails.ItemList.Item.', orderItemQuantityList, 'Quantity'))
+        return self.make_request(data, "POST")
+
+    def getShipment(self, shipmentId):
+        data = dict(Action='GetShipment',
+                    ShipmentId=shipmentId)
+
+        return self.make_request(data, "POST")
+
+    def cancelShipment(self, shipmentId):
+        data = dict(Action='CancelShipment',
+                    ShipmentId=shipmentId)
+        
+        return self.make_request(data, "POST")
+
